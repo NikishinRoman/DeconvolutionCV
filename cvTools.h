@@ -74,11 +74,10 @@ public:
      * Matlab-like operation on an image. Shifts the pixels values.
      *
      * @param image : the image to be shifted
-     * @param shiftedImage : the shifted image
      * @param shift : the 2-D parameters of the shift (can be float-valued)
-     *
+     * @return cv::Mat : shifted matrix
      */
-    static void circshift(const cv::Mat & image, cv::Mat & shiftedImage, cv::Point2f shift);
+    static cv::Mat circshift(const cv::Mat & image, cv::Point2f shift);
 
     /*
      * Matlab-like operation on an image. Pads the image with given borders and values
@@ -142,6 +141,48 @@ public:
      * @return double standard deviation
      */
     static double std(const cv::Mat & m);
+
+    /*
+     * Computes the "forward" col gradient of an image
+     *
+     */
+    static cv::Mat gradXPlus(const cv::Mat & m);
+
+    /*
+     * Computes the "forward" row gradient of an image
+     *
+     */
+    static cv::Mat gradYPlus(const cv::Mat & m);
+
+    /*
+     * Computes the "forward" col gradient of an image
+     *
+     */
+    static cv::Mat gradXMinus(const cv::Mat & m);
+
+    /*
+     * Computes the "forward" row gradient of an image
+     *
+     */
+    static cv::Mat gradYMinus(const cv::Mat & m);
+
+    /*
+     * Computes the "centered" col gradient of an image
+     *
+     */
+    static cv::Mat gradXCenter(const cv::Mat & m);
+
+    /*
+     * Computes the "centered" col gradient of an image
+     *
+     */
+    static cv::Mat gradYCenter(const cv::Mat & m);
+
+    /*
+     * Computes the divergence of the normalized gradient of an image
+     */
+    static cv::Mat curvature(const cv::Mat & m);
+
 };
 
 double cvTools::std(const cv::Mat & m)
@@ -212,9 +253,11 @@ void cvTools::padarray(const cv::Mat & image,cv::Mat & paddedImage, int top, int
     cv::copyMakeBorder(image, paddedImage, top, bottom, left, right, borderType, value);
 }
 
-void cvTools::circshift(const cv::Mat &image, cv::Mat &shiftedImage, cv::Point2f shiftCoords)
+cv::Mat cvTools::circshift(const cv::Mat &image, cv::Point2f shiftCoords)
 {
-    shift(image, shiftedImage, shiftCoords, cv::BORDER_REFLECT);
+    cv::Mat out;
+    shift(image, out, shiftCoords, cv::BORDER_REFLECT);
+    return out;
 }
 
 void cvTools::psf2otf(const cv::Mat & psf, cv::Mat & otf, const cv::Size & s)
@@ -250,6 +293,87 @@ void cvTools::displayImage(const cv::Mat &image, std::string windowName)
     namedWindow( windowName, cv::WINDOW_AUTOSIZE );
     imshow( windowName, image);
     cv::waitKey(0);
+}
+
+cv::Mat cvTools::gradXPlus(const cv::Mat & m)
+{
+    cv::Mat kernel(2,1,CV_64F);
+    kernel.at<double>(0) = -1;
+    kernel.at<double>(1) = 1;
+    cv::Mat out;
+    cv::filter2D(m, out, m.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT);
+    return out;
+}
+
+cv::Mat cvTools::gradYPlus(const cv::Mat & m)
+{
+    cv::Mat kernel(1,2,CV_64F);
+    kernel.at<double>(0) = -1;
+    kernel.at<double>(1) = 1;
+    cv::Mat out;
+    cv::filter2D(m, out, m.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT);
+    return out;
+}
+
+cv::Mat cvTools::gradXMinus(const cv::Mat & m)
+{
+    cv::Mat out = gradXPlus(m);
+    return circshift(out, cv::Point2f(1,0));
+}
+
+cv::Mat cvTools::gradYMinus(const cv::Mat & m)
+{
+    cv::Mat out = gradYPlus(m);
+    return circshift(out, cv::Point2f(0,1));
+}
+
+cv::Mat cvTools::gradXCenter(const cv::Mat & m)
+{
+    cv::Mat kernel(3,1,CV_64F);
+    kernel.at<double>(0) = -1/2.0;
+    kernel.at<double>(1) = 0;
+    kernel.at<double>(2) = 1/2.0;
+    cv::Mat out;
+    cv::filter2D(m, out, m.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT101);
+    return out;
+}
+
+cv::Mat cvTools::gradYCenter(const cv::Mat & m)
+{
+    cv::Mat kernel(1,3,CV_64F);
+    kernel.at<double>(0) = -1/2.0;
+    kernel.at<double>(1) = 0;
+    kernel.at<double>(2) = 1/2.0;
+    cv::Mat out;
+    cv::filter2D(m, out, m.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT101);
+    return out;
+}
+
+cv::Mat cvTools::curvature(const cv::Mat & m)
+{
+    cv::Mat p1 = gradXPlus(m);
+    cv::Mat p2 = gradYPlus(m);
+
+    cv::Mat p1_c = gradXCenter(m);
+    cv::Mat p2_c = gradYCenter(m);
+
+    double * p1_pnt = (double*)p1.ptr();
+    double * p2_pnt = (double*)p2.ptr();
+    double * p1_c_pnt = (double*)p1_c.ptr();
+    double * p2_c_pnt = (double*)p2_c.ptr();
+
+    // Gradient normalisation
+    for (int i = 0; i < m.rows * m.cols; i++)
+    {
+        p1_pnt[i] /= std::sqrt(p1_pnt[i]*p1_pnt[i] + p2_c_pnt[i]*p2_c_pnt[i]);
+        p2_pnt[i] /= std::sqrt(p2_pnt[i]*p2_pnt[i] + p1_c_pnt[i]*p1_c_pnt[i]);
+    }
+
+    p1 = gradXMinus(p1);
+    p2 = gradYMinus(p2);
+
+    cv::Mat curv = p1 + p2;
+    return curv;
 }
 
 #endif //DEBLURRINGCV_OPENCVUTILS_H

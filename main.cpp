@@ -40,6 +40,24 @@ int main(int argc, char * argv[]) {
     cvTools::displayImage(image,"Degraded Image");
     cvTools::displayImage(deconv,"Deconv Image");
     cvTools::displayImage(ref,"Ref Image");
+    cv::Mat gradXPlus = cvTools::gradXPlus(ref);
+    cvTools::displayImage(gradXPlus,"GradXPLUS");
+    cv::Mat gradYPlus = cvTools::gradYPlus(ref);
+    cvTools::displayImage(gradYPlus,"GradYPLUS");
+    cv::Mat gradXCenter = cvTools::gradXCenter(ref);
+    cvTools::displayImage(gradXCenter,"GradXCenter");
+    cv::Mat gradYCenter = cvTools::gradYCenter(ref);
+    cvTools::displayImage(gradYCenter,"GradYCenter");
+
+
+    cv::Mat gradXMinus = cvTools::gradXMinus(ref);
+    cvTools::displayImage(gradXMinus,"GradXMinus");
+    cv::Mat gradYMinus = cvTools::gradYMinus(ref);
+    cvTools::displayImage(gradYMinus,"GradYMinus");
+
+    cv::Mat curv = cvTools::curvature(ref);
+    cvTools::displayImage(curv,"Curvature");
+
 
 
     return 0;
