@@ -25,6 +25,8 @@
 /*
  * TODO : implement accelerated versions of all Richardson-Lucy algorithms
  * "Acceleration of iterative image resoration algorithms, Biggs & Andrews, 1997
+ *
+ * TODO : Check if wiener can be optimized (Filter construction, then multiplySpectrums)
  */
 class cvDeconv
 {
