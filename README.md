@@ -1,5 +1,5 @@
 # DeconvolutionCV
-Deconvolution algorithms toolbox based on **OpenCV**.  
+Deconvolution algorithms toolbox based on **OpenCV**  
 
 The main goal of this tool is to implement some well-known deconvolution algorithms using **OpenCV*  
 Algorithms available :  
