@@ -25,6 +25,8 @@
 
 /*
  * Provides general purpose tools for image processing
+ * TODO : Change curvature implementation (do everything w/out OpenCV?)
+ * TODO : Factorize finite difference schemes
  */
 class cvTools{
 public:
