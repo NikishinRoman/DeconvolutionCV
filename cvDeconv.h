@@ -22,6 +22,10 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "cvTools.h"
 
+/*
+ * TODO : implement accelerated versions of all Richardson-Lucy algorithms
+ * "Acceleration of iterative image resoration algorithms, Biggs & Andrews, 1997
+ */
 class cvDeconv
 {
 public:
@@ -39,15 +43,87 @@ public:
      * @param kernel : blurring kernel
      * @param mu : regularization parameter
      */
-    static void wienerDeconv(const cv::Mat & imbn, cv::Mat & deconv, cv::Mat kernel, double mu);
-    static void richardsonLucyDeconv();
+    static void wienerDeconv(const cv::Mat & imbn, cv::Mat & deconv, const cv::Mat & kernel, double mu);
+
+    /*
+     * Richardson-lucy deconvolution
+     * TODO : Use correlation for the second computation (OK for now on symmetric kernels)
+     *
+     * @param
+     */
+    static void richardsonLucyDeconv(const cv::Mat & imbn, cv::Mat & deconv, const cv::Mat & kernel, int numit );
+
+    /*
+     * Richardson-lucy deconvolution
+     * TODO : Use correlation for the second computation (OK for now on symmetric kernels)
+     *
+     * @param
+     */
+    static void richardsonLucyDeconvTikh(const cv::Mat &imbn, cv::Mat &deconv, const cv::Mat &kernel, double mu,
+                                         int numit);
     static void fistaDeconv();
     static void fastPdeDeconv();
     static void fastRichardsonLucyDeconv();
 };
 
 
-void cvDeconv::wienerDeconv(const cv::Mat& imbn, cv::Mat & deconv, cv::Mat kernel, double mu)
+void cvDeconv::richardsonLucyDeconv(const cv::Mat & imbn, cv::Mat & deconv, const cv::Mat & kernel, int numit)
+{
+    // Init output as the input image
+    deconv = imbn.clone();
+
+    // Carry out the iterations
+    for (int it = 0; it < numit; it++)
+    {
+        // Temporary matrix
+        cv::Mat ratio;
+        cv::filter2D(deconv, ratio, deconv.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT);
+
+        cv::divide(imbn, ratio, ratio);
+
+        cv::filter2D(ratio, ratio, ratio.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT);
+
+        // Apply iteration on the estimate
+        cv::multiply(deconv,ratio,deconv);
+    }
+}
+
+void cvDeconv::richardsonLucyDeconvTikh(const cv::Mat &imbn, cv::Mat &deconv, const cv::Mat &kernel, double mu,
+                                        int numit)
+{
+    // Init output as the input image
+    deconv = imbn.clone();
+
+    // Carry out the iterations
+    for (int it = 0; it < numit; it++)
+    {
+        // Temporary matrix
+        cv::Mat ratio;
+        cv::filter2D(deconv, ratio, deconv.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT);
+
+        cv::divide(imbn, ratio, ratio);
+
+        cv::filter2D(ratio, ratio, ratio.depth(), kernel,cv::Point(-1,-1), 0, cv::BORDER_REFLECT);
+
+        // TV Regularization
+        cv::Mat denom ;
+        cv::Laplacian(deconv,denom,deconv.depth(),1,1,0,cv::BORDER_REFLECT);
+        denom = 1.0 - 2.0 * mu * denom;
+        /*
+        std::cout<<denom.size()<<std::endl;
+        std::cout<<cvTools::max(denom)<<std::endl;
+        std::cout<<cvTools::min(denom)<<std::endl;
+        cvTools::displayImage(denom,"DENOM");
+         */
+        cv::divide(ratio,denom,ratio);
+
+        // Apply iteration on the estimate
+        cv::multiply(deconv,ratio,deconv);
+
+    }
+}
+
+void cvDeconv::wienerDeconv(const cv::Mat& imbn, cv::Mat & deconv, const cv::Mat & kernel, double mu)
 {
     double minDenom = std::sqrt(std::numeric_limits<double>::epsilon());
     // Minimize border effects : size = 2 * size with mirror constraints to obtain periodic image

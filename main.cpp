@@ -39,7 +39,9 @@ int main(int argc, char * argv[]) {
 
     cvTools::displayImage(image,"Degraded Image");
     cvTools::displayImage(deconv,"Deconv Image");
-    cvTools::displayImage(ref,"Ref Image");
+    //cvTools::displayImage(ref,"Ref Image");
+
+    /*
     cv::Mat gradXPlus = cvTools::gradXPlus(ref);
     cvTools::displayImage(gradXPlus,"GradXPLUS");
     cv::Mat gradYPlus = cvTools::gradYPlus(ref);
@@ -57,8 +59,26 @@ int main(int argc, char * argv[]) {
 
     cv::Mat curv = cvTools::curvature(ref);
     cvTools::displayImage(curv,"Curvature");
+    */
 
+    // Richardson-Lucy Deconvolution
+    cv::Mat deconvlucy;
+    int numit = 100;
+    cvDeconv::richardsonLucyDeconv(image, deconvlucy, kernel, numit);
 
+    cvTools::displayImage(deconvlucy,"DeconvLucy");
+
+    std::cout<<"Richardson-Lucy : "<<std::endl;
+    std::cout<<"PSNR deconv : "<<cvQM::psnr(ref, deconvlucy, cvTools::max(ref))<<std::endl;
+    std::cout<<"SSIM deconv : "<<cvQM::ssim(ref, deconvlucy)<<std::endl;
+
+    cv::Mat deconvlucytv;
+    cvDeconv::richardsonLucyDeconvTikh(image, deconvlucytv, kernel, 0.01, 10*numit);
+
+    cvTools::displayImage(deconvlucytv,"DeconvLucyTikhonov");
+    std::cout<<"Richardson-Lucy w/ Tikhonov Regularization : "<<std::endl;
+    std::cout<<"PSNR deconv : "<<cvQM::psnr(ref, deconvlucytv, cvTools::max(ref))<<std::endl;
+    std::cout<<"SSIM deconv : "<<cvQM::ssim(ref, deconvlucytv)<<std::endl;
 
     return 0;
 }

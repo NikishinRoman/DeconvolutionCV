@@ -135,6 +135,14 @@ public:
     static double max(const cv::Mat & m);
 
     /*
+     * Computes the maximum value of the first band of a cv::Mat
+     *
+     * @param m : input cv::Mat
+     * @return double maximum value
+     */
+    static double min(const cv::Mat & m);
+
+    /*
      * Computes the standard deviation of the first band of a cv::Mat
      *
      * @param m : input cv::Mat
@@ -181,7 +189,7 @@ public:
     /*
      * Computes the divergence of the normalized gradient of an image
      */
-    static cv::Mat curvature(const cv::Mat & m);
+    static cv::MatExpr curvature(const cv::Mat & m);
 
 };
 
@@ -197,6 +205,14 @@ double cvTools::max(const cv::Mat & m)
     double min, max;
     cv::minMaxLoc(m, &min, &max);
     return max;
+}
+
+
+double cvTools::min(const cv::Mat & m)
+{
+    double min, max;
+    cv::minMaxLoc(m, &min, &max);
+    return min;
 }
 
 std::string cvTools::getImageType(int number)
@@ -349,7 +365,7 @@ cv::Mat cvTools::gradYCenter(const cv::Mat & m)
     return out;
 }
 
-cv::Mat cvTools::curvature(const cv::Mat & m)
+cv::MatExpr cvTools::curvature(const cv::Mat & m)
 {
     cv::Mat p1 = gradXPlus(m);
     cv::Mat p2 = gradYPlus(m);
@@ -372,8 +388,7 @@ cv::Mat cvTools::curvature(const cv::Mat & m)
     p1 = gradXMinus(p1);
     p2 = gradYMinus(p2);
 
-    cv::Mat curv = p1 + p2;
-    return curv;
+    return p1 + p2;
 }
 
 #endif //DEBLURRINGCV_OPENCVUTILS_H
